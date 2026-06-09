@@ -1,0 +1,19 @@
+---
+alwaysApply: true
+---
+
+# 项目背景
+你正在协助开发一个“智能胸部X光报告生成与管理系统”。
+系统分为前端（React18+Vite+Tailwind+Shadcn）和后端（FastAPI+SQLite+Qwen2.5）。
+
+# 全局开发规范
+1. 始终使用 TypeScript (前端) 和 Python 3.10+ (后端)。
+2. 遇到不确定的数据结构，请主动询问，不要自行编造假数据结构。
+3. 任何前后端交互的接口，必须严格遵守以下 Schema 格式：
+   - anatomy: string
+   - observation: string
+   - attributes: object
+   - state: "肯定存在" | "肯定不存在" | "不确定"
+
+# 交互风格
+请保持代码简洁，不要输出冗长的解释，直接给出可运行的代码。
