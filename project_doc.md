@@ -218,3 +218,57 @@ Plaintext
 [前端] 响应渲染: 前端的富文本编辑器 (Tiptap) 监听到 SSE 流，以“打字机”效果逐字渲染报告，直到生成完毕。
 
 [后端] 归档落地: 医生点击保存后，前端发送最终确定的文本与图片路径，后端将其写入 SQLite Report 表与 Patient 表。
+
+8. 项目核心文件结构 (Project Directory Structure)
+由于本项目采用云端与本地分离的开发模式，整个工程在物理上分为前端（本地）和后端（AutoDL服务端）两个独立的代码库。
+
+8.1 前端代码库 (Local: React + Vite)
+前端注重组件化与状态管理，所有的接口请求均指向 .env 中配置的远端 Tailscale IP。
+
+Plaintext
+my_medical_frontend/
+├── .env.development         # 开发环境变量 (配置 VITE_API_BASE_URL=http://100.x.x.x:8000)
+├── package.json             # 项目依赖 (React, Zustand, Tailwind, Shadcn, Tiptap等)
+├── src/
+│   ├── main.tsx             # React 挂载入口
+│   ├── App.tsx              # 顶层路由与全局 Layout (包含左侧 Sidebar)
+│   ├── types/               # 🚨 核心类型契约
+│   │   └── schema.ts        # 严格定义与后端交互的 SchemaItem, Patient 等 TS 接口
+│   ├── store/               
+│   │   └── useAppStore.ts   # Zustand 全局状态 (存储当前选中患者ID、模型流式生成状态)
+│   ├── pages/               # 页面级视图 (Router 切换目标)
+│   │   ├── Workspace.tsx    # 工作台主页 (组合左中右三栏组件)
+│   │   ├── Cases.tsx        # 病例管理中心
+│   │   └── Settings.tsx     # 系统设置页
+│   ├── components/          # 业务与通用组件
+│   │   ├── workspace/       # 工作台专属子组件
+│   │   │   ├── ImagePanel.tsx   # 左侧：阅片区与 Canvas 热力图叠加层
+│   │   │   ├── ReportEditor.tsx # 中栏：Tiptap 富文本编辑器与打字机效果
+│   │   │   └── AICopilot.tsx    # 右侧：AI 对话聊天框与指令插入
+│   │   └── ui/              # Shadcn 自动生成的纯 UI 组件 (Button, Card, Input 等)
+│   └── lib/                 
+│       └── api.ts           # 封装与 FastAPI 交互的 Fetch/Axios 请求及 SSE 监听逻辑
+└── ...
+8.2 后端代码库 (AutoDL: FastAPI)
+后端注重路由解耦与显存管理，轻量级模型与大语言模型被隔离在不同的核心模块中。
+
+Plaintext
+my_medical_backend/
+├── requirements.txt         # Python 依赖清单 (fastapi, torch, transformers, sqlmodel等)
+├── main.py                  # FastAPI 启动入口 (包含模型预加载生命周期与跨域配置)
+├── database.py              # SQLite 数据库连接配置与 SQLModel 引擎初始化
+├── models_db.py             # 数据库表结构定义 (Patient, Report, ShortcutTemplate)
+├── api/                     # 路由分发层 (Controllers)
+│   ├── __init__.py
+│   ├── routers_schema.py    # 处理图片上传并调用轻量级模型的接口
+│   ├── routers_report.py    # 处理大模型流式生成的 SSE 接口
+│   └── routers_cases.py     # 处理患者与报告增删改查的 CRUD 接口
+├── core/                    # 🚨 AI 模型推理核心逻辑 (不直接触碰 HTTP)
+│   ├── __init__.py
+│   ├── schema_extractor.py  # 包含原生 PyTorch 网络结构定义及前向推理逻辑
+│   └── text_generator.py    # 包含 Qwen2.5 的加载与 Prompt 拼接生成逻辑
+├── models/                  # 模型权重存放目录 (本地不上传 Git)
+│   ├── lightweight_model/   # 存放 best_model.pth (提取特征用)
+│   └── qwen2.5/             # 存放 Qwen2.5 微调后的 Safetensors 权重与 Config
+└── data/                    
+    └── medical_app.db       # SQLite 本地数据库文件 (自动生成)
