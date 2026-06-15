@@ -2,65 +2,34 @@
 1. 项目概述
 本项目是一个面向影像科医生的智能辅助工作站。系统通过接入轻量级深度学习模型（提取结构化 Schema）和微调后的大语言模型（如 Qwen2.5），根据患者的正/侧位胸部 X 光片自动生成自然语言的医疗报告。系统旨在提供低认知负担的阅片体验、可靠的 AI 解释性（注意力图），以及完整的病例数据闭环。
 
-2. 技术栈架构与开发规范
-2.1 前端 (Client-Side)
-核心框架: React 18 + Vite + TypeScript (开启严格模式)。
+2. 技术栈架构与部署拓扑 (Architecture & Topology)
+本系统采用标准的B/S（Browser/Server）集中式 Web 服务架构。所有的代码（前端静态资源、后端业务逻辑、AI模型）全部集中部署在实验室的高性能 GPU 服务器上。用户端做到真正的“零安装”，仅需通过浏览器访问网址即可使用。
 
-UI 与样式: Tailwind CSS + Shadcn UI (构建医疗级暗黑/护眼主题)。
+2.1 客户端层 (Client-Side / 用户浏览器)
+形态: 纯网页。用户使用任意设备的 Web 浏览器访问系统。
 
-状态管理: Zustand (用于跨组件共享患者上下文、模型加载状态)。
+技术栈: React 18 + Vite + Tailwind CSS + Zustand 编译打包后的静态 HTML/CSS/JS 文件。
 
-富文本编辑: Tiptap (构建无头编辑器，支持打字机流式渲染效果)。
+职责: 在用户浏览器中渲染 UI 并接管交互逻辑，向服务器的公开 API 发起 HTTP 请求。
 
-图像渲染: HTML5 原生 Canvas 或 Fabric.js (用于实现图片缩放、拖拽，及热力图图层叠加)。
+2.2 服务端层 (Server-Side / 实验室 GPU 服务器)
+在物理服务器内部，系统被划分为三个核心模块协同工作：
 
-2.2 后端 (Server-Side / AI Gateway)
-核心框架: FastAPI (Python)，强制使用异步 (async/await) 处理路由。
+模块 0：静态资源网关 (Web Server)
 
-数据库引擎: SQLite (本地单文件) + SQLModel (基于 Pydantic 的 ORM 框架)。
+职责: 将前端 React 项目编译后的 dist 目录托管对外发布。可以使用 Nginx 进行反向代理，或者直接在 FastAPI (模块A) 中使用 StaticFiles 挂载前端页面。
 
-AI 接口规范:
+模块 A：业务网关与数据库服务 (Business Service - 端口 8000)
 
-提供基于 SSE (Server-Sent Events) 的流式输出接口，用于 Qwen2.5 的报告生成。
+技术栈: FastAPI + SQLModel + SQLite。
 
-提供独立接口用于生成病灶注意力热力图 (Attention Map)，如 Grad-CAM 结果。
+职责: 永不崩溃的轻量级业务大脑。处理前端发来的 CRUD 请求，读写本地 medical_app.db，保存多轮对话历史 (chat_history)。它对外暴露 API，对内负责向 GPU 推理服务发起调度请求，并将大模型的流式文本中继转发给前端。
 
-部署环境建议: 云端 GPU 算力实例（推荐利用 Tailscale 构建安全的虚拟局域网，前端直连云端内网 IP）。
+模块 B：GPU 推理微服务 (Inference Service - 端口 8001)
 
-3. 核心数据模型 (Database Schema)
-请后端基于 SQLModel 实现以下核心表结构：
+技术栈: FastAPI + PyTorch + Qwen2.5/轻量级模型。
 
-1. Patient (患者表)
-
-patient_id (String, 主键, 例如: P20260601)
-
-name (String, 姓名)
-
-gender (String, 性别)
-
-age (Integer, 年龄)
-
-created_at (DateTime, 录入时间)
-
-2. Report (检查报告表)
-
-report_id (String, 主键)
-
-patient_id (String, 外键，关联 Patient)
-
-image_paths (JSON, 存储正侧位原图的服务器存储路径或 URL)
-
-schema_data (JSON, 轻量级模型提取的中间态结构化数据)
-
-findings (Text, 影像所见)
-
-impression (Text, 影像诊断)
-
-ai_advice (Text, 附加医嘱/注意事项)
-
-attention_map_paths (JSON, 热力图缓存路径，可为空)
-
-created_at (DateTime, 生成时间)
+职责: 专职的“显存苦力”。与业务完全隔离，仅暴露内网纯计算 API（如 /api/model/extract_schema）。不连接任何数据库，专门防止 OOM（显存溢出）波及整个网站。
 
 3. ShortcutTemplate (快捷短语表)
 
@@ -219,56 +188,40 @@ Plaintext
 
 [后端] 归档落地: 医生点击保存后，前端发送最终确定的文本与图片路径，后端将其写入 SQLite Report 表与 Patient 表。
 
-8. 项目核心文件结构 (Project Directory Structure)
-由于本项目采用云端与本地分离的开发模式，整个工程在物理上分为前端（本地）和后端（AutoDL服务端）两个独立的代码库。
-
-8.1 前端代码库 (Local: React + Vite)
-前端注重组件化与状态管理，所有的接口请求均指向 .env 中配置的远端 Tailscale IP。
+8. 项目核心文件结构与部署拓扑
+8.1 物理拓扑网络
+用户端与实验室服务器通过局域网/校园网（或公网IP）进行通信，服务器内部通过环回地址（127.0.0.1）进行微服务间通信。
 
 Plaintext
-my_medical_frontend/
-├── .env.development         # 开发环境变量 (配置 VITE_API_BASE_URL=http://100.x.x.x:8000)
-├── package.json             # 项目依赖 (React, Zustand, Tailwind, Shadcn, Tiptap等)
-├── src/
-│   ├── main.tsx             # React 挂载入口
-│   ├── App.tsx              # 顶层路由与全局 Layout (包含左侧 Sidebar)
-│   ├── types/               # 🚨 核心类型契约
-│   │   └── schema.ts        # 严格定义与后端交互的 SchemaItem, Patient 等 TS 接口
-│   ├── store/               
-│   │   └── useAppStore.ts   # Zustand 全局状态 (存储当前选中患者ID、模型流式生成状态)
-│   ├── pages/               # 页面级视图 (Router 切换目标)
-│   │   ├── Workspace.tsx    # 工作台主页 (组合左中右三栏组件)
-│   │   ├── Cases.tsx        # 病例管理中心
-│   │   └── Settings.tsx     # 系统设置页
-│   ├── components/          # 业务与通用组件
-│   │   ├── workspace/       # 工作台专属子组件
-│   │   │   ├── ImagePanel.tsx   # 左侧：阅片区与 Canvas 热力图叠加层
-│   │   │   ├── ReportEditor.tsx # 中栏：Tiptap 富文本编辑器与打字机效果
-│   │   │   └── AICopilot.tsx    # 右侧：AI 对话聊天框与指令插入
-│   │   └── ui/              # Shadcn 自动生成的纯 UI 组件 (Button, Card, Input 等)
-│   └── lib/                 
-│       └── api.ts           # 封装与 FastAPI 交互的 Fetch/Axios 请求及 SSE 监听逻辑
-└── ...
-8.2 后端代码库 (AutoDL: FastAPI)
-后端注重路由解耦与显存管理，轻量级模型与大语言模型被隔离在不同的核心模块中。
+[ 医生电脑 / 浏览器 ]  === HTTP 请求 ===>  [ 实验室 GPU 服务器 (Ubuntu) ]
+(输入 http://服务器IP)                           |
+                                            |-- [ Web 代理 / 挂载点 ] 返回 React 打包的静态页面
+                                            |
+                                            |-- [ 进程 A: 8000 端口 ] 业务后端 & SQLite
+                                            |       | (内网 HTTP 请求转发)
+                                            |-- [ 进程 B: 8001 端口 ] 独占 GPU 的模型推理后端
+8.2 全栈代码库结构 (部署于实验室服务器)
+整个项目的代码统一存放在实验室服务器的指定工作空间下。
 
 Plaintext
-my_medical_backend/
-├── requirements.txt         # Python 依赖清单 (fastapi, torch, transformers, sqlmodel等)
-├── main.py                  # FastAPI 启动入口 (包含模型预加载生命周期与跨域配置)
-├── database.py              # SQLite 数据库连接配置与 SQLModel 引擎初始化
-├── models_db.py             # 数据库表结构定义 (Patient, Report, ShortcutTemplate)
-├── api/                     # 路由分发层 (Controllers)
-│   ├── __init__.py
-│   ├── routers_schema.py    # 处理图片上传并调用轻量级模型的接口
-│   ├── routers_report.py    # 处理大模型流式生成的 SSE 接口
-│   └── routers_cases.py     # 处理患者与报告增删改查的 CRUD 接口
-├── core/                    # 🚨 AI 模型推理核心逻辑 (不直接触碰 HTTP)
-│   ├── __init__.py
-│   ├── schema_extractor.py  # 包含原生 PyTorch 网络结构定义及前向推理逻辑
-│   └── text_generator.py    # 包含 Qwen2.5 的加载与 Prompt 拼接生成逻辑
-├── models/                  # 模型权重存放目录 (本地不上传 Git)
-│   ├── lightweight_model/   # 存放 best_model.pth (提取特征用)
-│   └── qwen2.5/             # 存放 Qwen2.5 微调后的 Safetensors 权重与 Config
-└── data/                    
-    └── medical_app.db       # SQLite 本地数据库文件 (自动生成)
+/workplace/CXRG/
+│
+├── my_medical_frontend/     # 前端工程目录
+│   ├── src/                 # React 源码 (页面、组件、Zustand Store)
+│   ├── package.json
+│   └── dist/                # 🚀 执行 npm run build 后生成的生产环境静态文件
+│
+└── my_medical_backend/      # 后端工程目录
+    ├── data/                # 存放 SQLite 数据库文件 (medical_app.db)
+    ├── models/              # 存放所有深度学习模型权重
+    │
+    ├── business_service/    # 🚀 进程 A: 业务后端 (运行在 8000 端口)
+    │   ├── main_biz.py      # 业务入口 (挂载前端dist目录、注册CRUD路由)
+    │   ├── database.py      # SQLite 引擎初始化
+    │   ├── models_db.py     # 数据表结构定义 (包含 chat_history 字段)
+    │   └── routers/         # API 路由拆分
+    │
+    └── inference_service/   # 🚀 进程 B: 推理后端 (运行在 8001 端口)
+        ├── main_infer.py    # 推理入口 (加载模型到显存)
+        ├── schema_extractor.py 
+        └── text_generator.py

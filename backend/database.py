@@ -1,7 +1,8 @@
 import os
 from pathlib import Path
 
-from sqlmodel import SQLModel, create_engine, session
+from sqlmodel import SQLModel, create_engine
+from sqlalchemy.orm import Session
 
 # 确保 data 目录存在
 DATA_DIR = Path(__file__).parent / "data"
@@ -17,5 +18,5 @@ def create_db_and_tables():
 
 
 def get_session():
-    with session.Session(engine) as s:
+    with Session(engine) as s:
         yield s
