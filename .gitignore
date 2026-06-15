@@ -1,0 +1,18 @@
+# 前端忽略文件
+**/node_modules/
+**/dist/
+**/.env.development
+**/.env.production
+**/.env
+
+# 后端忽略文件 (为你接下来的后端开发提前准备)
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/venv/
+**/env/
+
+# 系统及编辑器忽略文件
+.DS_Store
+.vscode/
+.idea/
