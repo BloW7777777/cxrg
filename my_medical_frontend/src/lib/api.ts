@@ -1,4 +1,16 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+function resolveApiBase(): string {
+  const envBase = import.meta.env.VITE_API_BASE_URL?.trim()
+  if (envBase) return envBase
+
+  if (typeof window !== 'undefined') {
+    const { protocol, hostname } = window.location
+    return `${protocol}//${hostname}:8000`
+  }
+
+  return 'http://127.0.0.1:8000'
+}
+
+const API_BASE = resolveApiBase()
 
 export interface Patient {
   patient_id: string

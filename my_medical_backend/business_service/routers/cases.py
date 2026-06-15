@@ -1,13 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 
-from database import get_session
-from models_db import Patient, Report
+from ..database import get_session
+from ..models_db import Patient, Report
 
 router = APIRouter(prefix="/api", tags=["cases"])
 
-
-# ---------- Patient ----------
 
 @router.post("/patients", response_model=Patient)
 def create_patient(patient: Patient, session: Session = Depends(get_session)):
@@ -39,8 +37,6 @@ def get_patient(patient_id: str, session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="患者不存在")
     return patient
 
-
-# ---------- Report ----------
 
 @router.post("/reports", response_model=Report)
 def create_report(report: Report, session: Session = Depends(get_session)):
