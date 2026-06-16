@@ -1,34 +1,33 @@
-import React, { useState } from 'react'
+import React from 'react'
+import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import Workspace from './pages/Workspace'
 import Cases from './pages/Cases'
 
-type NavItem = 'workspace' | 'cases' | 'settings'
+const SettingsPage: React.FC = () => {
+  return (
+    <div className="h-full flex items-center justify-center text-slate-500">
+      <p className="text-lg">系统设置 - 建设中</p>
+    </div>
+  )
+}
 
 const AppLayout: React.FC = () => {
-  const [activeNav, setActiveNav] = useState<NavItem>('workspace')
-
-  const handleConsult = (patientId: string) => {
-    sessionStorage.setItem('recheck_patient_id', patientId)
-    setActiveNav('workspace')
-  }
-
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden">
-      {/* 左侧固定侧边栏 */}
-      <Sidebar activeItem={activeNav} onNavigate={setActiveNav} />
-
-      {/* 主内容区 */}
-      <main className="flex-1 overflow-hidden">
-        {activeNav === 'workspace' && <Workspace />}
-        {activeNav === 'cases' && <Cases onConsult={handleConsult} />}
-        {activeNav === 'settings' && (
-          <div className="h-full flex items-center justify-center text-slate-500">
-            <p className="text-lg">系统设置 - 建设中</p>
-          </div>
-        )}
-      </main>
-    </div>
+    <HashRouter>
+      <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden">
+        <Sidebar />
+        <main className="flex-1 overflow-hidden">
+          <Routes>
+            <Route path="/" element={<Navigate to="/workspace" replace />} />
+            <Route path="/workspace" element={<Workspace />} />
+            <Route path="/cases" element={<Cases />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="*" element={<Navigate to="/workspace" replace />} />
+          </Routes>
+        </main>
+      </div>
+    </HashRouter>
   )
 }
 

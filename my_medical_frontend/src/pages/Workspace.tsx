@@ -3,8 +3,11 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import ImagePanel from '@/components/workspace/ImagePanel'
 import ReportEditor from '@/components/workspace/ReportEditor'
 import AICopilot from '@/components/workspace/AICopilot'
+import { useAppStore } from '@/store/useAppStore'
 
 const Workspace: React.FC = () => {
+  const currentPatient = useAppStore((state) => state.currentPatient)
+
   return (
     <div className="h-full">
       <PanelGroup direction="horizontal" className="h-full">
@@ -22,7 +25,7 @@ const Workspace: React.FC = () => {
 
         {/* 中栏：报告编辑区 */}
         <Panel defaultSize={45} minSize={30} maxSize={60}>
-          <ReportEditor />
+          <ReportEditor currentPatient={currentPatient} />
         </Panel>
 
         {/* 可调整大小的分隔条 */}

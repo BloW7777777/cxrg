@@ -3,9 +3,11 @@ import { Sparkles, Trash2, Save, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import type { Patient } from '@/lib/api'
 
 interface ReportEditorProps {
   className?: string
+  currentPatient?: Patient | null
 }
 
 const mockFindingsText = `双侧肺野透亮度正常，未见明显肺气肿征象。肺纹理走行自然，分布均匀，未见异常纹理增多或减少。
@@ -19,7 +21,11 @@ const mockFindingsText = `双侧肺野透亮度正常，未见明显肺气肿征
 const mockImpressionText = `1. 胸部X线平片未见明显异常。
 2. 建议：定期体检，戒烟。`
 
-const ReportEditor: React.FC<ReportEditorProps> = ({ className }) => {
+const ReportEditor: React.FC<ReportEditorProps> = ({ className, currentPatient }) => {
+  const patientDisplay = currentPatient
+    ? `${currentPatient.name}（患者 ID: ${currentPatient.patient_id}）`
+    : '未选择患者，请前往病例库选择'
+
   return (
     <div className={cn('h-full flex flex-col bg-slate-900/20', className)}>
       {/* 顶部 Header */}
@@ -27,7 +33,7 @@ const ReportEditor: React.FC<ReportEditorProps> = ({ className }) => {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-slate-400" />
-            <span className="font-mono text-slate-200">P20260601</span>
+            <span className="font-mono text-slate-200">{patientDisplay}</span>
           </div>
           <Badge variant="warning">未保存</Badge>
         </div>

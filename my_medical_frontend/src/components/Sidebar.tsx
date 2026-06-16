@@ -1,19 +1,20 @@
 import React from 'react'
 import { Monitor, FolderOpen, Settings, User } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
-interface SidebarProps {
-  activeItem?: 'workspace' | 'cases' | 'settings'
-  onNavigate?: (item: 'workspace' | 'cases' | 'settings') => void
-}
-
 const navItems = [
-  { id: 'workspace' as const, icon: Monitor, label: '工作台' },
-  { id: 'cases' as const, icon: FolderOpen, label: '病例库' },
-  { id: 'settings' as const, icon: Settings, label: '设置' },
+  { id: 'workspace' as const, icon: Monitor, label: '工作台', path: '/workspace' },
+  { id: 'cases' as const, icon: FolderOpen, label: '病例库', path: '/cases' },
+  { id: 'settings' as const, icon: Settings, label: '设置', path: '/settings' },
 ]
 
-const Sidebar: React.FC<SidebarProps> = ({ activeItem = 'workspace', onNavigate }) => {
+const Sidebar: React.FC = () => {
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  const activePath = location.pathname
+
   return (
     <div className="w-16 h-screen bg-slate-900/50 border-r border-slate-800 flex flex-col items-center py-4">
       {/* Logo */}
@@ -25,11 +26,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem = 'workspace', onNavigate 
       <nav className="flex-1 flex flex-col gap-2">
         {navItems.map((item) => {
           const Icon = item.icon
-          const isActive = activeItem === item.id
+          const isActive = activePath === item.path
           return (
             <button
               key={item.id}
-              onClick={() => onNavigate?.(item.id)}
+              onClick={() => navigate(item.path)}
               className={cn(
                 'w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 relative group',
                 isActive

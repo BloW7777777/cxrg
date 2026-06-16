@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Plus, Search, FileText, Stethoscope, RefreshCw, User, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,6 +30,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet'
 import { api, Patient, Report, CreatePatientPayload } from '@/lib/api'
+import { useAppStore } from '@/store/useAppStore'
 
 // ----------------------------------------------------------------
 // 辅助：防抖 Hook
@@ -306,11 +308,10 @@ function NewPatientDialog({ open, onClose, onSuccess }: NewPatientDialogProps) {
 // ----------------------------------------------------------------
 // 主页面
 // ----------------------------------------------------------------
-interface CasesProps {
-  onConsult?: (patientId: string) => void
-}
+export default function Cases() {
+  const navigate = useNavigate()
+  const setCurrentPatient = useAppStore((state) => state.setCurrentPatient)
 
-export default function Cases({ onConsult }: CasesProps) {
   const [patients, setPatients] = useState<Patient[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -345,14 +346,8 @@ export default function Cases({ onConsult }: CasesProps) {
   }
 
   const handleReconsult = (patient: Patient) => {
-    if (onConsult) {
-      onConsult(patient.patient_id)
-    } else {
-      // fallback: 直接本地存储并跳回 workspace
-      sessionStorage.setItem('recheck_patient_id', patient.patient_id)
-      window.location.hash = 'workspace'
-      window.dispatchEvent(new HashChangeEvent('hashchange'))
-    }
+    setCurrentPatient(patient)
+    navigate('/workspace')
   }
 
   const handlePatientCreated = (patient: Patient) => {
