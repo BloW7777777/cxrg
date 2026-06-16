@@ -1,7 +1,6 @@
 from pathlib import Path
 
-from sqlmodel import SQLModel, create_engine
-from sqlalchemy.orm import Session
+from sqlmodel import SQLModel, Session, create_engine
 
 # 数据库文件统一放在 my_medical_backend/data 下
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
